@@ -95,6 +95,7 @@ These files provide supporting datasets used for classical, multimodal, and expl
 │   ├── supplementary_table_2.xlsx   # Clinicopathologic and morphometric analysis table of the training dataset used in the XGBoost model
 │   ├── supplementary_table_3.xlsx   # Multimodal data analysis table combining clinical and morphometric factors
 │   ├── supplementary_table_4.xlsx   # Data analysis table from Grad-CAM results (external validation set)
-│   └── supplementary_table_5.xlsx   # Pathologists evaluation
+│   ├── supplementary_table_5.xlsx   # Analysis of the Cell-GNN.
+│   └── supplementary_table_6.xlsx   # Pathologists evaluation
 └── 
 
