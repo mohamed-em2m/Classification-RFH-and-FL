@@ -12,7 +12,7 @@ The framework integrates histopathological image patches, cell-level representat
 The pipeline combines:
 Traditional machine learning (XGBoost with SHAP),
 Deep learning (CNNs + multilayer perceptron),
-Vision Transformer–based cell modelling (CellViT / CellViT++),
+Vision Transformer–based cell modelling (CellViT++),
 Graph Neural Networks for spatial analysis (Cell-GNN),
 Explainable AI methods (Grad-CAM).
 The system is intended for research and proof-of-concept use in computational pathology.
