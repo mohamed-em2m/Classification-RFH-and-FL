@@ -74,7 +74,7 @@ Original clinical and histopathological datasets are not publicly available due 
 
 Model Weights:
 Publicly available via Zenodo
-DOI: https://doi.org/10.5281/zenodo.17474399
+DOI: https://doi.org/10.5281/zenodo.18190502
 
 ✅ Reproducibility Notes
 Random seeds are fixed (torch, numpy, random)
