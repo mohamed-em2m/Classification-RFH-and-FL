@@ -6,12 +6,21 @@ Year: 2025
 ________________________________________
 **1. Project Overview**
 
-This project implements a multimodal artificial intelligence pipeline for classifying Reactive Follicular Hyperplasia (RFH) and Follicular Lymphoma (FL).
-It integrates histopathological images, clinicopathologic data, and morphometric nuclear features using XGBoost (SHAP), convolutional neural networks (CNNs) + multilayer perceptron, and explainable AI methods (Grad-CAM).
+This project implements a multimodal artificial intelligence pipeline for the classification of Reactive Follicular Hyperplasia (RFH) and Follicular Lymphoma (FL).
+The framework integrates histopathological image patches, cell-level representations, spatial cell–cell relationships, clinicopathological data, and nuclear morphometric features.
+
+The pipeline combines:
+Traditional machine learning (XGBoost with SHAP),
+Deep learning (CNNs + multilayer perceptron),
+Vision Transformer–based cell modelling (CellViT / CellViT++),
+Graph Neural Networks for spatial analysis (Cell-GNN),
+Explainable AI methods (Grad-CAM).
+The system is intended for research and proof-of-concept use in computational pathology.
 ________________________________________
 **2. Pipeline**
 
-<img width="1228" height="957" alt="Captura de tela 2025-10-30 125109" src="https://github.com/user-attachments/assets/43cf2137-203f-4422-bb54-1917b7fb7962" />
+<img width="1224" height="960" alt="Figure 1" src="https://github.com/user-attachments/assets/5ae14d1c-3e63-4236-95eb-37c2aa2b05d3" />
+
 
 ________________________________________
 **3. Environment and Hardware**
