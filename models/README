@@ -1,7 +1,14 @@
-🧠Models
+🧠 RFH vs FL – Computational Pathology Models
 
-This folder contains all model implementations used in the Classification of Reactive Follicular Hyperplasia (RFH) and Follicular Lymphoma (FL) project.
-It includes deep learning, multimodal, and classical machine learning architectures for image, clinical, and morphometric data integration.
+This repository contains the modelling pipeline used in the study “Classification of Reactive Follicular Hyperplasia (RFH) and Follicular Lymphoma (FL)”, integrating histopathological images, 
+cell-level spatial organisation, morphometric features, and clinicopathological data.
+
+The project combines:
+Deep learning (CNNs and Vision Transformers)
+Graph Neural Networks (GNNs)
+Multimodal learning
+Classical machine learning with statistical interpretability
+
 
 📘 Model Categories
 1. Multimodal Deep Learning
@@ -23,116 +30,135 @@ Weighted loss functions for class imbalance
 ROC/PR curve generation
 Support for multi-GPU training (torch.nn.DataParallel)
 
-2. Image Segmentation
-Script	Description
-segmentation_unet++.py	Implements U-Net++ with attention gates for tissue segmentation. 
-This segmentation model is used to generate tissue masks for patch extraction and preprocessing.
 
-3. Classical Machine Learning
-Script	Description
-xgboost_classification_cpc_mpa.R	XGBoost classifier trained on clinicopathologic and morphometric parameters.
-xgboost_classification_gradcam.R	XGBoost model trained on Grad-CAM-derived features for interpretability and cross-validation.
+2. Cell-Level Vision Transformers (CellViT++)
+🔎 Important note on implementation
+CellViT++ are established, peer-reviewed architectures.
+In this study, their original implementations were used without architectural modifications.
 
-Both scripts support:
-Training/validation/test split
-Feature importance plots
-Confusion matrix and ROC/PR evaluation
-CSV export of results to /results/
+For this reason:
+The full source code of CellViT++ is not redistributed in this repository
+Only wrapper scripts and downstream analysis pipelines are provided
+All hyperparameters and configurations used are fully documented below
 
-⚙️ Usage Example
-# Train a multimodal ResNet18 model (patch-level)
-python multimodal_resnet18_patch_level.py \
-  --data_dir ./data/train \
-  --val_dir ./data/val \
-  --epochs 100 \
-  --batch_size 64 \
-  --output_dir ./results/resnet18_patch/
+Purpose
+Nuclear segmentation
+Cell-level feature extraction
+Morphometric and appearance embeddings
 
-# Run XGBoost Grad-CAM analysis
-python xgboost_classification_gradcam.py \
-  --input ./supplementary_data/supplementary_table_4.xlsx \
-  --output ./results/xgboost_gradcam/
-
-📁 Output Structure
-results/
-
-├── resnet18_patch/
-
-│   ├── model.pth
-
-│   ├── metrics.csv
-
-│   ├── confusion_matrix.png
-
-│   ├── roc_curve.png
-
-│   └── pr_curve.png
-
-├── unetpp_segmentation/
-
-│   ├── masks/
-
-│   └── training_curves.png
-
-└── xgboost_gradcam/
-
-    ├── feature_importance.png
-
-    ├── shap_summary.png
-
-    └── performance_metrics.csv
-
-⚙️ Model Configuration and Training Details
-1. Traditional Machine Learning (XGBoost)
-Objective: Binary logistic regression
-Boosting rounds: 100
-Learning rate: 0.1
-Maximum tree depth: 6
-Train/test split: 70% / 30%
-Evaluation metrics: Accuracy, AUC, F1-score, Precision, Recall
-Feature interpretability: SHAP (p < 0.2)
-
-2. Nuclear Segmentation (U-Net++)
-Architecture: U-Net++ with attention gates
-Framework: PyTorch
+Hyperparameters and configuration
+Architecture: Vision Transformer–based (CellViT++)
 Input size: 256 × 256 pixels
-Training: NuInsSeg (665 images, ~30,000 annotated nuclei)
-Data split: 80% training / 10% validation / 10% test
-Optimizer: Adam (learning rate = 1 × 10⁻⁴)
-Loss function: Binary Cross-Entropy with Logits
-Batch size: 4
-Epochs: 50
-Precision mode: Mixed (CUDA acceleration)
+Magnification: 40×
+Pretraining: As provided in the original CellViT++ release
 
-3. Patch Generation and Pre-processing
+Output:
+Binary nuclear masks
+Cell-level embeddings
+Morphometric descriptors (area, eccentricity, etc.)
+
+Mode: Inference only (no retraining)
+Framework: PyTorch
+Precision: Mixed precision (CUDA)
+
+Usage in this project
+Outputs from CellViT++ are used as inputs for:
+XGBoost models
+Cell Graph Neural Network (Cell-GNN)
+Multimodal learning pipelines
+
+3. Cell Graph Neural Network (Cell-GNN)
+🔎 Important note on implementation
+Cell-GNN is a previously established graph-based framework.
+The original implementation was used without architectural changes.
+
+Thus:
+The full Cell-GNN source code is not duplicated here
+Only preprocessing, graph construction, and analysis scripts are included
+Hyperparameters are explicitly reported
+
+Purpose
+To model cell–cell spatial relationships and quantify tissue organisation patterns.
+
+Graph construction
+Nodes: Cell nuclei centroids
+Edge definition: k-nearest neighbours (k = 8)
+Distance metric: Euclidean distance
+Graph type: Undirected
+Self-loops: Disabled
+
+GNN architecture and hyperparameters
+GNN type: GraphSAGE
+Number of layers: 3
+Hidden dimension: 128
+Node embedding dimension: 128
+Aggregation: Mean
+Activation: ReLU
+Normalisation: Batch Normalisation
+Dropout: 0.3
+
+Training / inference configuration
+Optimiser: AdamW
+Learning rate: 1 × 10⁻³
+Weight decay: 1 × 10⁻⁴
+Batch size: 16 graphs
+Epochs: 100
+Early stopping: Patience = 15
+Random seed: Fixed
+
+Outputs
+Mean intercellular distance per patch
+Patch- and patient-level graph descriptors
+Statistical features for group comparison
+
+4. Image Segmentation (CNN-based)
+              Script	                       Model                                  Description
+segmentation_unet++.py             	   │    U-Net++    │         U-Net++ with attention gates for tissue segmentation
+
+5. Classical Machine Learning
+Script	                                     Model                                  Description
+xgboost_classification_cpc_mpa.R	     │    U-Net++    │        XGBoost on clinicopathological and morphometric features
+xgboost_classification_gradcam.R	     │    U-Net++    │                XGBoost on Grad-CAM–derived features
+
+Features
+Train / validation / test split
+Feature importance plots
+Confusion matrix and ROC/PR curves
+CSV export to /results/
+
+⚙️ Patch Generation and Pre-processing
 Patch size: 299 × 299 pixels
-Patch overlap: 20%
-Color normalization: Macenko method
-Data augmentation: Rotations (90°, 180°, 270°) and Gaussian blur
-Data split:
+Overlap: 20%
+Colour normalisation: Macenko
+Data augmentation:
+Rotations (90°, 180°, 270°)
+Gaussian blur
+
+Dataset split
 Training: 80% (73 cases, 276,823 patches)
 Validation: 10% (9 cases, 32,043 patches)
 Test: 10% (8 cases, 31,939 patches)
-External validation: 2 cohorts (9 cases each; 22,064 and 22,168 patches)
-Final dataset size:
-1,384,115 training patches
-160,215 validation patches
-159,695 test patches
+External validation: 2 cohorts (9 cases each)
 
-4. Multimodal Deep Learning (CNN + MLP Fusion)
-Backbones: AlexNet, VGG16, and ResNet18 (ImageNet pretrained)
-Fusion strategy: Late fusion (concatenation of CNN and MLP embeddings)
-MLP branch: Fully connected layers with ReLU activation and dropout regularization
-Optimizer: AdamW (learning rate = 1 × 10⁻⁴, weight decay = 1 × 10⁻⁴)
-Loss function: Weighted Cross-Entropy
-Batch size: 64
-Computation: Mixed precision (CUDA)
-Aggregation (patient-level): Mean of patch-level probabilities
+Final dataset size
+Training: 1,384,115 patches
+Validation: 160,215 patches
+Test: 159,695 patches
 
-🧬 Reproducibility Notes
+🧬 Reproducibility
 Python: 3.12.11
 PyTorch: 2.8.0 + CUDA 12.8
-GPU: 3 × NVIDIA RTX 3090 (24 GB each)
+GPUs: 3 × NVIDIA RTX 3090 (24 GB)
 OS: Ubuntu 20.04 LTS
 RAM: 125 GB
-Random seeds are fixed (torch, numpy, random) for deterministic behavior.
+Determinism ensured via fixed random seeds (torch, numpy, random)
+
+📎 Reproducibility Statement
+Although CellViT / CellViT++ and Cell-GNN implementations are not redistributed, all results can be fully reproduced by:
+Using the original public implementations
+Applying the exact hyperparameters reported in this README
+Running the provided preprocessing, inference, and analysis scripts
+
+📜 License and Citation
+This repository is intended for academic and research use.
+If you use this code, please cite the corresponding paper and the original CellViT and Cell-GNN publications.
