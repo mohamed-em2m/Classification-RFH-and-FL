@@ -112,11 +112,11 @@ Patch- and patient-level graph descriptors
 Statistical features for group comparison
 
 4. Image Segmentation (CNN-based)
-              Script	                     Model                                  Description
+              Script	                       Model                                  Description
 segmentation_unet++.py             	     │    U-Net++    │         U-Net++ with attention gates for tissue segmentation
 
 5. Classical Machine Learning
-Script	                                     Model                                  Description
+Script	                                       Model                                  Description
 xgboost_classification_cpc_mpa.R	     │    U-Net++    │        XGBoost on clinicopathological and morphometric features
 xgboost_classification_gradcam.R	     │    U-Net++    │                XGBoost on Grad-CAM–derived features
 
