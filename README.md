@@ -80,41 +80,57 @@ ________________________________________
 ________________________________________
 **5. Model Architectures**
 
-•	XGBoost +SHAP
+•	XGBoost + SHAP (clinicopathological and morphometric modelling)
 
-•	U-Net++
+•	U-Net++ (tissue-level segmentation for patch extraction)
 
-•	AlexNet + Multilayer perceptron
+•	AlexNet + Multilayer Perceptron (multimodal fusion)
 
-•	VGG16 + Multilayer perceptron
+•	VGG16 + Multilayer Perceptron (multimodal fusion)
 
-•	ResNet18 + Multilayer perceptron
+•	ResNet18 + Multilayer Perceptron (multimodal fusion)
 
-•	GradCam
+•	CellViT / CellViT++ (Vision Transformer–based nuclear segmentation and cell-level embedding extraction)
+
+•	Cell Graph Neural Network (Cell-GNN) (cell–cell spatial modelling using k-nearest neighbour graphs)
+
+•	Grad-CAM (CNN-based interpretability)
+
+Note:
+CellViT / CellViT++ and Cell-GNN are established architectures. Their original implementations were used without architectural modification. Only inference, downstream analysis, and integration code are included in this repository.
 ________________________________________
 **6. Features Used**
 
-• Patches (H&E)
+• H&E image patches (299 × 299 pixels, 20×)
 
-• Patches (Unet++)
-   
-•	Morphometric features (nucleus-based)
+• Segmented patches (U-Net++)
 
-•	Clinicopathologic features (age, sex, location)
+• Cell-level embeddings and nuclear masks (CellViT / CellViT++)
+
+• Cell–cell spatial descriptors (mean intercellular distances from Cell-GNN)
+
+• Nucleus-based morphometric features
+
+• Clinicopathological features (age, sex, lesion location)
 ________________________________________
 **7. Evaluation Metrics**
    
-•	XGBoost + SHAP – Classification (accuracy, area under the curve (AUC), F1-score, precision, recall and SHAP).
+• XGBoost + SHAP:
+Accuracy, AUC, F1-score, Precision, Recall, SHAP values
 
-•	U-Net++ (Loss, Accuracy, Precision, Recall, IoU and Dice coefficient).
+• U-Net++ / CellViT++ (segmentation):
+Loss, Accuracy, Precision, Recall, IoU, Dice coefficient
 
-•	AlexNet (Loss, Accuracy, Precision, Recall, Confusion matrix (TP, FN, FP, TN), F1-score, Specificity, Receiver operating characteristic – area under the curve (ROC AUC) and Cohen's Kappa).
+• CNN-based models (AlexNet, VGG16, ResNet18):
+Loss, Accuracy, Precision, Recall, Confusion Matrix (TP, FN, FP, TN),
+F1-score, Specificity, ROC AUC, Cohen’s Kappa
 
-•	VGG16 (Loss, Accuracy, Precision, Recall, Confusion matrix (TP, FN, FP, TN), F1-score, Specificity, Receiver operating characteristic – area under the curve (ROC AUC) and Cohen's Kappa).
+• Cell-GNN (spatial analysis):
+Mean intercellular distances, effect sizes (Cliff’s delta, Hedges’ g),
+Mann–Whitney U test and Welch’s t-test
 
-•	ResNet18 (Loss, Accuracy, Precision, Recall, Confusion matrix (TP, FN, FP, TN), F1-score, Specificity, Receiver operating characteristic – area under the curve (ROC AUC) and Cohen's Kappa).
-
-•	GradCam - XGBoost - Classification (accuracy, area under the curve (AUC), F1-score, precision, recall). 
+• Grad-CAM:
+Accuracy, AUC, F1-score, Precision, Recall (classification-based evaluation)
 
 ________________________________________
 **8. Repository Structure**
@@ -130,70 +146,6 @@ MODEL_CARD.txt — Description of the essential information of the study
 README.md — Documentation and usage instructions
 
 REQUIREMENTS.txt — Dependencies
-
-
-data/
-
-patches/
-
- ├── gradcam/
- 
- │ ├── heatmaps/
- 
- │ │ └── heatmap.png files
- 
- │ └── patches/
- 
- │  └── patch.png files
-
- │ └── wsi_heatmaps/
- 
- │  └── wsi.png files
- 
- ├── masks/
- 
- │ ├── train/
- 
- │ ├── val/
- 
- │ └── test/
- 
- │  └── mask.png files
- 
- └── patches/
- 
-  ├── train/
-  
-  ├── val/
-  
-  └── test/
-  
-   └── patch.png files
-   
- models/
-
- ├── multimodal_alexnet_patch_level.py
- 
- ├── multimodal_alexnet_patient_level.py
- 
- ├── multimodal_resnet18_patch_level.py
- 
- ├── multimodal_resnet18_patient_level.py
- 
- ├── multimodal_vgg16_patch_level.py
- 
- ├── multimodal_vgg16_patient_level.py
- 
- ├── segmentation_unet++.py
- 
- ├── xgboost_classification_cpc_mpa.R
- 
- └── xgboost_classification_gradcam.R
-
-results/
-
- └── metrics
-
 ________________________________________
 
 **9. Run models and reproduce tables**
