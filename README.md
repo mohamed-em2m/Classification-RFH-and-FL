@@ -260,7 +260,7 @@ ________________________________________
   publisher={Nature Publishing Group UK London}
 }
 ________________________________________
-**17. License**
+**16. License**
 
 MIT License © 2025 Lucas Lacerda de Souza
 
