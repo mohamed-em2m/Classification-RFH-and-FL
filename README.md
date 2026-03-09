@@ -19,7 +19,9 @@ The system is intended for research and proof-of-concept use in computational pa
 ________________________________________
 **2. Pipeline**
 
-<img width="1224" height="960" alt="Figure 1" src="https://github.com/user-attachments/assets/5ae14d1c-3e63-4236-95eb-37c2aa2b05d3" />
+
+![Figure 1](https://github.com/user-attachments/assets/d211d37b-958d-42a2-95ce-ad378f49df61)
+
 
 
 ________________________________________
