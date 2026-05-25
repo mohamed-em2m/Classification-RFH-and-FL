@@ -1,8 +1,8 @@
-**Deep Learning-Based Histopathologic Classification of Head and Neck Reactive Follicular Hyperplasia and Follicular Lymphoma** 
+**A multimodal explainable ai framework to assist in the differential diagnosis of head and neck reactive follicular hyperplasia and follicular lymphoma: an international multicentre study** 
 
 Author: Lucas Lacerda de Souza
 
-Year: 2025
+Year: 2026
 ________________________________________
 **1. Project Overview**
 
@@ -254,15 +254,10 @@ and is publicly available (https://doi.org/10.5281/zenodo.18190502).
 ________________________________________
 **15. Citation**
 
-@article{delasouza2025,
-  title={Deep Learning-Based Histopathologic Classification of Head and Neck Reactive Follicular Hyperplasia and Follicular Lymphoma},
-  author={Souza, Lucas Lacerda de, Chen, Zhiyang […] Khurram, Syed Ali and Vargas, Pablo Agustin},
-  journal={npj precision oncology},
-  year={2025},
-  publisher={Nature Publishing Group UK London}
-}
+de Souza LL, Chen Z, de Cáceres CVBL, Rodrigues NG, Pontes HAR, Soares CD, Coracin FL, Kimura I, Siqueira SAC, Mariano FV, Kimura TC, Bonfitto JFL, de Freitas LLL, de Aquino SN, Hankinson P, Mahmood H, Walsh H, Torres Torres IA, Mosqueda-Taylor A, Aleixo PB, Martins MD, Menna-Barreto CL, Hagag A, Nakamura TCR, Dos Santos GC, Moraes MC, Lopes MA, Santos-Silva AR, Fonseca FP, Khurram SA, Vargas PA. A multimodal explainable ai framework to assist in the differential diagnosis of head and neck reactive follicular hyperplasia and follicular lymphoma: an international multicentre study. Virchows Arch. 2026 May 2. doi: 10.1007/s00428-026-04527-w. 
+
 ________________________________________
 **16. License**
 
-MIT License © 2025 Lucas Lacerda de Souza
+MIT License © 2026 Lucas Lacerda de Souza
 
