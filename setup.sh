@@ -2,7 +2,7 @@
 
 ###############################################################################
 # Setup Script for RFH-FL Classification Project
-# Automates environment creation and dependency installation
+# Uses uv for fast, reliable environment and dependency management
 # Supports both CPU and GPU configurations
 #
 # Usage:
@@ -20,12 +20,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-PROJECT_NAME="rfh-fl-classification"
-PYTHON_VERSION="3.12"
-VENV_NAME="rfh-fl-env"
 VENV_PATH=".venv"
+PYTHON_VERSION="3.12"
 INSTALL_TYPE=""
-NEEDS_PIP_INSTALL=false
 
 ###############################################################################
 # Helper Functions
@@ -104,20 +101,34 @@ parse_args() {
 # Check System Requirements
 ###############################################################################
 
-check_python() {
-    print_info "Checking Python installation..."
+install_uv() {
+    print_header "Checking uv"
 
-    if ! command -v python3 &> /dev/null; then
-        print_error "Python 3 is not installed. Please install Python 3.12 or higher."
+    if command -v uv &> /dev/null; then
+        UV_VERSION=$(uv --version | awk '{print $2}')
+        print_success "uv $UV_VERSION already installed"
+        return
+    fi
+
+    print_info "uv not found — installing..."
+    if command -v curl &> /dev/null; then
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+    elif command -v wget &> /dev/null; then
+        wget -qO - https://astral.sh/uv/install.sh | sh
+    else
+        print_error "Neither curl nor wget found. Please install uv manually: https://docs.astral.sh/uv/getting-started/installation/"
         exit 1
     fi
 
-    PYTHON_VERSION_INSTALLED=$(python3 --version | awk '{print $2}')
-    print_success "Python $PYTHON_VERSION_INSTALLED found"
+    # Reload PATH so uv is available in this session
+    export PATH="$HOME/.local/bin:$PATH"
 
-    if [[ ! $PYTHON_VERSION_INSTALLED == 3.12* ]]; then
-        print_warning "Python 3.12.x is recommended. You have $PYTHON_VERSION_INSTALLED — continuing anyway."
+    if ! command -v uv &> /dev/null; then
+        print_error "uv installation failed. Please install it manually: https://docs.astral.sh/uv/getting-started/installation/"
+        exit 1
     fi
+
+    print_success "uv $(uv --version | awk '{print $2}') installed"
 }
 
 check_cuda() {
@@ -144,16 +155,8 @@ create_venv() {
         rm -rf "$VENV_PATH"
     fi
 
-    print_info "Creating virtual environment..."
-    if ! python3 -m venv "$VENV_PATH" 2>&1; then
-        print_warning "Standard venv creation failed, trying without pip bootstrap..."
-        python3 -m venv --without-pip "$VENV_PATH" || {
-            print_error "Failed to create virtual environment"
-            exit 1
-        }
-        NEEDS_PIP_INSTALL=true
-    fi
-
+    print_info "Creating virtual environment with Python $PYTHON_VERSION..."
+    uv venv "$VENV_PATH" --python "$PYTHON_VERSION"
     print_success "Virtual environment created at $VENV_PATH"
 }
 
@@ -163,27 +166,6 @@ activate_venv() {
     print_success "Virtual environment activated"
 }
 
-upgrade_pip() {
-    print_header "Upgrading pip and build tools"
-
-    if [ "$NEEDS_PIP_INSTALL" = true ]; then
-        print_info "Installing pip manually..."
-        if command -v curl &> /dev/null; then
-            curl -s https://bootstrap.pypa.io/get-pip.py | python3
-        elif command -v wget &> /dev/null; then
-            wget -qO - https://bootstrap.pypa.io/get-pip.py | python3
-        else
-            print_warning "Could not download get-pip.py. Trying ensurepip as fallback..."
-            python3 -m ensurepip --upgrade --default-pip || print_warning "ensurepip also failed"
-        fi
-    fi
-
-    python3 -m pip install --upgrade pip setuptools wheel 2>/dev/null || \
-        print_warning "Could not upgrade pip/setuptools/wheel. Continuing with existing versions..."
-
-    print_success "pip and build tools ready"
-}
-
 ###############################################################################
 # Dependency Installation
 ###############################################################################
@@ -191,17 +173,28 @@ upgrade_pip() {
 install_dependencies() {
     if [ "$INSTALL_TYPE" = "gpu" ]; then
         print_header "Installing dependencies (GPU mode — CUDA 12.8)"
-        pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 \
+
+        # Install PyTorch GPU from the PyTorch CUDA index
+        uv pip install \
+            torch==2.8.0 \
+            torchvision==0.23.0 \
+            torchaudio==2.8.0 \
             --index-url https://download.pytorch.org/whl/cu128
         print_success "PyTorch GPU (CUDA 12.8) installed"
     else
         print_header "Installing dependencies (CPU mode)"
-        pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 \
+
+        # Install PyTorch CPU from the PyTorch CPU index
+        uv pip install \
+            torch==2.8.0 \
+            torchvision==0.23.0 \
+            torchaudio==2.8.0 \
             --index-url https://download.pytorch.org/whl/cpu
         print_success "PyTorch CPU installed"
     fi
 
-    pip install -e ".[dev]"
+    # Install the project and all remaining dependencies (including [dev] extras)
+    uv pip install -e ".[dev]"
     print_success "Project dependencies installed"
 }
 
@@ -282,6 +275,9 @@ print_final_instructions() {
     echo "4. For GPU acceleration:"
     echo -e "   ${YELLOW}python -c 'import torch; print(f\"GPU available: {torch.cuda.is_available()}\")'${NC}"
     echo ""
+    echo -e "${BLUE}Run commands with uv (no manual activation needed):${NC}"
+    echo -e "   ${YELLOW}uv run python inferance.py --input_dir ./data/test/ --output_dir ./results/${NC}"
+    echo ""
     echo -e "${BLUE}Documentation:${NC}"
     echo "  - README.md        - Project overview and usage"
     echo "  - MODEL_CARD.txt   - Model details and specifications"
@@ -304,7 +300,7 @@ main() {
     parse_args "$@"
     echo ""
 
-    check_python
+    install_uv
     echo ""
 
     check_cuda
@@ -314,9 +310,6 @@ main() {
     echo ""
 
     activate_venv
-    echo ""
-
-    upgrade_pip
     echo ""
 
     install_dependencies

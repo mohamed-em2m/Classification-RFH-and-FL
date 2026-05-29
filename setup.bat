@@ -1,8 +1,7 @@
 @echo off
 REM ###############################################################################
-REM # Setup Script for RFH-FL Classification Project (Windows)
+REM # Setup Script for RFH-FL Classification Project (Windows, using uv)
 REM # Automates environment creation and dependency installation
-REM # Supports both CPU and GPU configurations
 REM ###############################################################################
 
 setlocal enabledelayedexpansion
@@ -10,62 +9,23 @@ setlocal enabledelayedexpansion
 REM Configuration
 set PROJECT_NAME=rfh-fl-classification
 set PYTHON_VERSION=3.12
-set VENV_NAME=rfh-fl-env
 set VENV_PATH=.venv
 set INSTALL_TYPE=
 set COMMAND_ARG=%1
-set NEEDS_PIP_INSTALL=0
 
-REM Color codes (using limited colors for Windows compatibility)
+REM Colors
 set "SUCCESS=[SUCCESS]"
 set "ERROR=[ERROR]"
 set "WARNING=[WARNING]"
 set "INFO=[INFO]"
 
-REM Parse command-line arguments
-if /i "!COMMAND_ARG!"=="--cuda" (
-    set INSTALL_TYPE=1
-    echo.
-    echo %INFO% GPU (CUDA 12.8) mode selected via argument
-    echo.
-) else if /i "!COMMAND_ARG!"=="--cpu" (
-    set INSTALL_TYPE=2
-    echo.
-    echo %INFO% CPU-only mode selected via argument
-    echo.
-) else if /i "!COMMAND_ARG!"=="--help" (
-    echo Usage: setup.bat [OPTIONS]
-    echo.
-    echo Options:
-    echo   --cuda    Install with CUDA 12.8 support (GPU)
-    echo   --cpu     Install CPU-only version
-    echo   --help    Show this help message
-    echo.
-    echo Examples:
-    echo   setup.bat --cuda    # Setup with GPU support
-    echo   setup.bat --cpu     # Setup CPU-only version
-    echo   setup.bat           # Interactive mode (prompts for choice)
-    echo.
-    pause
-    exit /b 0
-) else if not "!COMMAND_ARG!"=="" (
-    echo %ERROR% Unknown argument: !COMMAND_ARG!
-    echo.
-    echo Usage: setup.bat [OPTIONS]
-    echo Options: --cuda, --cpu, --help
-    echo.
-    pause
-    exit /b 1
-)
-
 cls
 echo.
 echo ========================================
-echo RFH-FL Classification Project Setup
+echo RFH-FL Classification Project Setup (uv)
 echo ========================================
 echo.
-echo This script will set up the complete development environment
-echo for the RFH-FL AI classification framework.
+echo Fast and reliable environment setup with uv
 echo.
 
 REM Step 1: Check Python
@@ -79,57 +39,85 @@ if errorlevel 1 (
 )
 
 for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_INSTALLED=%%i
-echo %SUCCESS% Python %PYTHON_INSTALLED% found
+echo %SUCCESS% Python !PYTHON_INSTALLED! found
 echo.
 
-REM Step 2: Check CUDA
-echo %INFO% Checking NVIDIA CUDA availability...
-where nvidia-smi >nul 2>&1
-if %errorlevel% equ 0 (
-    for /f "tokens=*" %%i in ('nvidia-smi --query-gpu=driver_version --format^=csv,noheader 2^>nul') do set DRIVER_VERSION=%%i
-    echo %SUCCESS% NVIDIA GPU detected (Driver: !DRIVER_VERSION!)
-    set HAS_CUDA=1
-) else (
-    echo %WARNING% NVIDIA GPU not detected.
-    set HAS_CUDA=0
+REM Step 2: Check and install uv
+echo %INFO% Checking uv installation...
+where uv >nul 2>&1
+if errorlevel 1 (
+    echo %WARNING% uv not found. Installing uv...
+    powershell -Command "irm https://astral.sh/uv/install.ps1 | iex" >nul 2>&1
+    if errorlevel 1 (
+        echo %WARNING% Attempting alternative installation method...
+        pip install uv >nul 2>&1
+    )
 )
+
+where uv >nul 2>&1
+if errorlevel 1 (
+    echo %ERROR% Failed to install uv. Please visit https://docs.astral.build/uv/
+    pause
+    exit /b 1
+)
+
+for /f "tokens=*" %%i in ('uv --version 2^>nul') do set UV_VERSION=%%i
+echo %SUCCESS% !UV_VERSION! found
 echo.
 
-REM Step 3: Determine installation type
-if not "!INSTALL_TYPE!"=="" (
-    REM Argument was provided, INSTALL_TYPE already set
+REM Step 3: Parse command-line arguments
+if /i "!COMMAND_ARG!"=="--cuda" (
+    set INSTALL_TYPE=gpu
+    echo %INFO% GPU (CUDA 12.8) mode selected
     echo.
+) else if /i "!COMMAND_ARG!"=="--cpu" (
+    set INSTALL_TYPE=cpu
+    echo %INFO% CPU-only mode selected
+    echo.
+) else if /i "!COMMAND_ARG!"=="--help" (
+    echo Usage: setup.bat [OPTIONS]
+    echo.
+    echo Options:
+    echo   --cuda    Install with CUDA 12.8 support (GPU)
+    echo   --cpu     Install CPU-only version
+    echo   --help    Show this help message
+    echo.
+    pause
+    exit /b 0
+) else if not "!COMMAND_ARG!"=="" (
+    echo %ERROR% Unknown argument: !COMMAND_ARG!
+    pause
+    exit /b 1
 ) else (
-    REM Interactive mode - ask user
+    REM Interactive mode
     echo ========================================
     echo Installation Type Selection
     echo ========================================
-    if !HAS_CUDA! equ 1 (
-        echo GPU (CUDA 12.8) support is available on this system.
+    where nvidia-smi >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo GPU (CUDA 12.8) support available
         echo.
-        echo 1 = GPU (CUDA 12.8) - Recommended if NVIDIA GPU available
+        echo 1 = GPU (CUDA 12.8)
         echo 2 = CPU only
-        echo.
-        set /p INSTALL_TYPE="Select installation type (1 or 2): "
+        set /p INSTALL_TYPE="Select (1 or 2): "
+        if not "!INSTALL_TYPE!"=="1" set INSTALL_TYPE=cpu
+        if "!INSTALL_TYPE!"=="1" set INSTALL_TYPE=gpu
     ) else (
-        echo %WARNING% GPU support not available. Installing CPU version.
-        set INSTALL_TYPE=2
+        set INSTALL_TYPE=cpu
+        echo %WARNING% GPU not detected. Using CPU mode.
     )
+    echo.
 )
-echo.
 
 REM Step 4: Check if venv already exists
-if exist "%VENV_PATH%" (
-    echo %WARNING% Virtual environment already exists at %VENV_PATH%
+if exist "!VENV_PATH!" (
+    echo %WARNING% Virtual environment already exists
     set /p RECREATE="Remove and recreate? (y/n): "
     if /i "!RECREATE!"=="y" (
-        echo %INFO% Removing old virtual environment...
-        rmdir /s /q "%VENV_PATH%"
-        if !errorlevel! equ 0 (
-            echo %SUCCESS% Old virtual environment removed
-        )
+        echo %INFO% Removing old environment...
+        rmdir /s /q "!VENV_PATH!" >nul 2>&1
     ) else (
-        echo %INFO% Using existing virtual environment
+        echo %INFO% Using existing environment
         goto activate_venv
     )
 )
@@ -138,61 +126,32 @@ REM Step 5: Create virtual environment
 echo ========================================
 echo Creating Virtual Environment
 echo ========================================
-echo %INFO% Creating virtual environment...
-python -m venv "%VENV_PATH%" >nul 2>&1
-if %errorlevel% equ 0 (
-    echo %SUCCESS% Virtual environment created at %VENV_PATH%
-    set NEEDS_PIP_INSTALL=0
+echo %INFO% Creating with uv...
+uv venv "!VENV_PATH!" --python !PYTHON_VERSION! >nul 2>&1
+if !errorlevel! equ 0 (
+    echo %SUCCESS% Virtual environment created
 ) else (
-    echo %WARNING% Standard venv creation failed, trying without pip bootstrap...
-    python -m venv --without-pip "%VENV_PATH%" >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %INFO% Virtual environment created (without pip). Will install pip manually...
-        set NEEDS_PIP_INSTALL=1
-    ) else (
-        echo %ERROR% Failed to create virtual environment
-        pause
-        exit /b 1
-    )
+    echo %ERROR% Failed to create virtual environment
+    pause
+    exit /b 1
 )
 echo.
 
 REM Step 6: Activate virtual environment
 :activate_venv
 echo %INFO% Activating virtual environment...
-call "%VENV_PATH%\Scripts\activate.bat"
+call "!VENV_PATH!\Scripts\activate.bat"
 echo %SUCCESS% Virtual environment activated
 echo.
 
-REM Step 7: Upgrade pip
-echo ========================================
-echo Upgrading pip and build tools
-echo ========================================
-
-if %NEEDS_PIP_INSTALL% equ 1 (
-    echo %INFO% Installing pip manually...
-    powershell -Command "try { (New-Object System.Net.WebClient).DownloadString('https://bootstrap.pypa.io/get-pip.py') | python } catch { Write-Host 'Manual pip install failed, trying ensurepip...' }" >nul 2>&1
-    if !errorlevel! neq 0 (
-        echo %WARNING% Could not download get-pip.py. Trying ensurepip as fallback...
-        python -m ensurepip --upgrade --default-pip >nul 2>&1
-    )
-)
-
-python -m pip install --upgrade pip setuptools wheel >nul 2>&1
-if %errorlevel% equ 0 (
-    echo %SUCCESS% pip, setuptools, and wheel upgraded
-) else (
-    echo %WARNING% Could not upgrade all tools, continuing anyway...
-)
-echo.
-
-REM Step 8: Install dependencies
-if %INSTALL_TYPE% equ 1 (
+REM Step 7: Install dependencies
+if "!INSTALL_TYPE!"=="gpu" (
     echo ========================================
-    echo Installing dependencies (GPU mode - CUDA 12.8)
+    echo Installing dependencies (GPU - CUDA 12.8)
     echo ========================================
-    echo %INFO% Installing compatible PyTorch GPU components...
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --no-cache-dir
+    echo %INFO% Installing PyTorch GPU...
+    uv pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 ^
+        --index-url https://download.pytorch.org/whl/cu128 --no-cache-dir
     if !errorlevel! equ 0 (
         echo %SUCCESS% PyTorch GPU installed
     ) else (
@@ -200,10 +159,11 @@ if %INSTALL_TYPE% equ 1 (
     )
 ) else (
     echo ========================================
-    echo Installing dependencies (CPU mode)
+    echo Installing dependencies (CPU)
     echo ========================================
-    echo %INFO% Installing compatible PyTorch CPU components...
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
+    echo %INFO% Installing PyTorch CPU...
+    uv pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 ^
+        --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
     if !errorlevel! equ 0 (
         echo %SUCCESS% PyTorch CPU installed
     ) else (
@@ -213,52 +173,39 @@ if %INSTALL_TYPE% equ 1 (
 echo.
 
 echo %INFO% Installing project dependencies...
-pip install -e ".[dev]"
-if %errorlevel% equ 0 (
+uv pip install -e ".[dev]" --no-cache-dir
+if !errorlevel! equ 0 (
     echo %SUCCESS% Project dependencies installed
 ) else (
-    echo %WARNING% Some dependencies may not have installed correctly
+    echo %WARNING% Some dependencies may not have installed
 )
 echo.
 
-REM Step 9: Verify installation
+REM Step 8: Verify installation
 echo ========================================
 echo Verifying Installation
 echo ========================================
-python -c "import torch; print('PyTorch version:', torch.__version__)" 2>nul
-if %errorlevel% equ 0 (
+
+python -c "import torch; print('PyTorch:', torch.__version__)" 2>nul
+if !errorlevel! equ 0 (
     echo %SUCCESS% PyTorch verified
 ) else (
     echo %ERROR% PyTorch verification failed
 )
 
-python -c "import numpy; print('NumPy version:', numpy.__version__)" 2>nul
-if %errorlevel% equ 0 (
+python -c "import numpy; print('NumPy:', numpy.__version__)" 2>nul
+if !errorlevel! equ 0 (
     echo %SUCCESS% NumPy verified
-) else (
-    echo %ERROR% NumPy verification failed
 )
 
-python -c "import pandas; print('Pandas version:', pandas.__version__)" 2>nul
-if %errorlevel% equ 0 (
+python -c "import pandas; print('Pandas:', pandas.__version__)" 2>nul
+if !errorlevel! equ 0 (
     echo %SUCCESS% Pandas verified
-) else (
-    echo %ERROR% Pandas verification failed
 )
 
-python -c "import sklearn; print('Scikit-learn version:', sklearn.__version__)" 2>nul
-if %errorlevel% equ 0 (
-    echo %SUCCESS% Scikit-learn verified
-) else (
-    echo %ERROR% Scikit-learn verification failed
-)
-
-if %INSTALL_TYPE% equ 1 (
-    python -c "import torch; print('GPU Available:', torch.cuda.is_available())"
-)
 echo.
 
-REM Step 10: Print final instructions
+REM Step 9: Print final instructions
 echo ========================================
 echo Setup Complete!
 echo ========================================
@@ -266,23 +213,25 @@ echo %SUCCESS% Environment setup completed successfully!
 echo.
 echo Next Steps:
 echo 1. Activate the environment:
-echo    %VENV_PATH%\Scripts\activate.bat
+echo    !VENV_PATH!\Scripts\activate.bat
 echo.
 echo 2. Verify the setup:
-echo    python -c "import torch; print(f'PyTorch version: {torch.__version__}')"
+echo    python -c "import torch; print(torch.__version__)"
 echo.
 echo 3. Run inference:
-echo    python inferance.py --input_dir ./data/test/ --output_dir ./results/
+echo    python INFERENCE.py --input_dir ./data/test/ --output_dir ./results/
 echo.
-if %INSTALL_TYPE% equ 1 (
-    echo 4. Check GPU acceleration:
-    echo    python -c "import torch; print(f'GPU available: {torch.cuda.is_available()}')"
+if "!INSTALL_TYPE!"=="gpu" (
+    echo 4. Check GPU:
+    echo    python -c "import torch; print(torch.cuda.is_available())"
     echo.
 )
-echo Documentation:
-echo   - README.md - Project overview and usage
-echo   - MODEL_CARD.txt - Model details and specifications
-echo   - models/ - Model implementations
+echo Using uv for package management:
+echo   - Add packages: uv pip install package_name
+echo   - List packages: uv pip list
+echo   - Update project: uv sync
+echo.
+echo Documentation: README.md, MODEL_CARD.txt, INSTALLATION.md
 echo.
 
 pause
