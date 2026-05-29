@@ -40,14 +40,14 @@ dependencies = [
 
 [project.optional-dependencies]
 torch-cpu = [
-    "torch==2.8.0",
-    "torchvision==0.19.0",
-    "torchaudio==2.8.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "torchaudio>=2.0.0",
 ]
 torch-cuda = [
-    "torch==2.8.0",
-    "torchvision==0.19.0",
-    "torchaudio==2.8.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "torchaudio>=2.0.0",
 ]
 dev = [
     "pytest>=7.0",

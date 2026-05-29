@@ -191,8 +191,8 @@ if %INSTALL_TYPE% equ 1 (
     echo ========================================
     echo Installing dependencies (GPU mode - CUDA 12.8)
     echo ========================================
-    echo %INFO% Installing PyTorch GPU (CUDA 12.8)...
-    pip install torch==2.8.0 torchvision==0.19.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+    echo %INFO% Installing compatible PyTorch GPU components...
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --no-cache-dir
     if !errorlevel! equ 0 (
         echo %SUCCESS% PyTorch GPU installed
     ) else (
@@ -202,8 +202,8 @@ if %INSTALL_TYPE% equ 1 (
     echo ========================================
     echo Installing dependencies (CPU mode)
     echo ========================================
-    echo %INFO% Installing PyTorch CPU...
-    pip install torch==2.8.0 torchvision==0.19.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+    echo %INFO% Installing compatible PyTorch CPU components...
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
     if !errorlevel! equ 0 (
         echo %SUCCESS% PyTorch CPU installed
     ) else (

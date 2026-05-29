@@ -137,13 +137,15 @@ python -m pip install --upgrade pip setuptools wheel
 
 **For GPU (CUDA 12.8):**
 ```bash
-pip install torch==2.8.0 torchvision==0.19.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --no-cache-dir
 ```
 
 **For CPU only:**
 ```bash
-pip install torch==2.8.0 torchvision==0.19.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
 ```
+
+**Note:** The setup scripts use flexible version resolution to ensure compatibility across different PyTorch distributions. Minimum supported versions are PyTorch 2.0.0, torchvision 0.15.0, and torchaudio 2.0.0.
 
 ### 6. Install Project Dependencies
 
@@ -276,12 +278,34 @@ chmod +x .venv/bin/activate
 source .venv/bin/activate
 ```
 
+### PyTorch Version Compatibility
+
+**Error:** `Could not find a version that satisfies the requirement torchvision==X.Y.Z`
+
+**Solution:** The setup scripts now use flexible version specifications to handle different PyTorch distributions. If you encounter version conflicts:
+
+1. **Let pip resolve versions automatically:**
+   ```bash
+   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+   ```
+
+2. **Check available versions:**
+   ```bash
+   pip index versions torch --index-url https://download.pytorch.org/whl/cu128
+   ```
+
+3. **Install compatible group:**
+   ```bash
+   pip install torch>=2.0.0 torchvision>=0.15.0 torchaudio>=2.0.0 \
+       --index-url https://download.pytorch.org/whl/cu128
+   ```
+
 ### PyTorch Not Installing
 
 Try alternative PyTorch index:
 ```bash
-# Official index
-pip install torch==2.8.0 -f https://download.pytorch.org/whl/torch_stable.html
+# Official index with all versions
+pip install torch -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 ### Import Errors After Installation
