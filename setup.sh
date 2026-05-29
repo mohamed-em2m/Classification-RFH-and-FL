@@ -3,11 +3,13 @@
 ###############################################################################
 # Setup Script for RFH-FL Classification Project
 # Uses uv for fast, reliable environment and dependency management
-# Supports both CPU and GPU configurations
+# Supports both CPU and GPU configurations, and venv or system installs
 #
 # Usage:
-#   ./setup.sh --cuda    # Install with CUDA 12.8 support (GPU)
-#   ./setup.sh --cpu     # Install CPU-only version
+#   ./setup.sh --cuda              # GPU + venv (default)
+#   ./setup.sh --cpu               # CPU + venv (default)
+#   ./setup.sh --cuda --system     # GPU, install into system/current environment
+#   ./setup.sh --cpu  --system     # CPU, install into system/current environment
 ###############################################################################
 
 set -e  # Exit on error
@@ -22,7 +24,8 @@ NC='\033[0m' # No Color
 # Configuration
 VENV_PATH=".venv"
 PYTHON_VERSION="3.12"
-INSTALL_TYPE=""
+INSTALL_TYPE=""      # "gpu" | "cpu"
+ENV_MODE="venv"      # "venv" | "system"
 
 ###############################################################################
 # Helper Functions
@@ -34,37 +37,33 @@ print_header() {
     echo -e "${BLUE}========================================${NC}"
 }
 
-print_success() {
-    echo -e "${GREEN}✓ $1${NC}"
-}
-
-print_error() {
-    echo -e "${RED}✗ $1${NC}"
-}
-
-print_warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
-}
-
-print_info() {
-    echo -e "${BLUE}ℹ $1${NC}"
-}
+print_success() { echo -e "${GREEN}✓ $1${NC}"; }
+print_error()   { echo -e "${RED}✗ $1${NC}"; }
+print_warning() { echo -e "${YELLOW}⚠ $1${NC}"; }
+print_info()    { echo -e "${BLUE}ℹ $1${NC}"; }
 
 print_usage() {
-    echo "Usage: $0 [OPTIONS]"
+    echo "Usage: $0 --cuda|--cpu [--system] [--help]"
     echo ""
-    echo "Options:"
-    echo "  --cuda    Install with CUDA 12.8 support (GPU)"
-    echo "  --cpu     Install CPU-only version"
-    echo "  --help    Show this help message"
+    echo "Required (pick one):"
+    echo "  --cuda      Install PyTorch with CUDA 12.8 support (GPU)"
+    echo "  --cpu       Install PyTorch CPU-only"
+    echo ""
+    echo "Optional:"
+    echo "  --system    Install into the current/system Python environment instead"
+    echo "              of creating a virtual environment. Useful for Kaggle, Colab,"
+    echo "              or any managed environment where venvs are not supported."
+    echo "  --help      Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 --cuda    # Setup with GPU support"
-    echo "  $0 --cpu     # Setup CPU-only version"
+    echo "  $0 --cuda               # GPU install, isolated venv (recommended)"
+    echo "  $0 --cpu                # CPU install, isolated venv (recommended)"
+    echo "  $0 --cuda --system      # GPU install, no venv (Kaggle / Colab)"
+    echo "  $0 --cpu  --system      # CPU install, no venv (Kaggle / Colab)"
 }
 
 ###############################################################################
-# Parse Arguments (required — no interactive fallback)
+# Parse Arguments
 ###############################################################################
 
 parse_args() {
@@ -75,38 +74,57 @@ parse_args() {
         exit 1
     fi
 
-    case "$1" in
-        --cuda)
-            INSTALL_TYPE="gpu"
-            print_info "GPU (CUDA 12.8) mode selected"
-            ;;
-        --cpu)
-            INSTALL_TYPE="cpu"
-            print_info "CPU-only mode selected"
-            ;;
-        --help)
-            print_usage
-            exit 0
-            ;;
-        *)
-            print_error "Unknown argument: $1"
-            echo ""
-            print_usage
-            exit 1
-            ;;
-    esac
+    for arg in "$@"; do
+        case "$arg" in
+            --cuda)
+                INSTALL_TYPE="gpu"
+                ;;
+            --cpu)
+                INSTALL_TYPE="cpu"
+                ;;
+            --system)
+                ENV_MODE="system"
+                ;;
+            --help)
+                print_usage
+                exit 0
+                ;;
+            *)
+                print_error "Unknown argument: $arg"
+                echo ""
+                print_usage
+                exit 1
+                ;;
+        esac
+    done
+
+    if [ -z "$INSTALL_TYPE" ]; then
+        print_error "You must specify --cuda or --cpu."
+        echo ""
+        print_usage
+        exit 1
+    fi
+
+    # Summary
+    local torch_label="CPU"
+    [ "$INSTALL_TYPE" = "gpu" ] && torch_label="GPU (CUDA 12.8)"
+
+    local env_label="venv ($VENV_PATH)"
+    [ "$ENV_MODE" = "system" ] && env_label="system (no venv)"
+
+    print_info "PyTorch: $torch_label"
+    print_info "Environment: $env_label"
 }
 
 ###############################################################################
-# Check System Requirements
+# Install uv
 ###############################################################################
 
 install_uv() {
     print_header "Checking uv"
 
     if command -v uv &> /dev/null; then
-        UV_VERSION=$(uv --version | awk '{print $2}')
-        print_success "uv $UV_VERSION already installed"
+        print_success "uv $(uv --version | awk '{print $2}') already installed"
         return
     fi
 
@@ -116,20 +134,24 @@ install_uv() {
     elif command -v wget &> /dev/null; then
         wget -qO - https://astral.sh/uv/install.sh | sh
     else
-        print_error "Neither curl nor wget found. Please install uv manually: https://docs.astral.sh/uv/getting-started/installation/"
+        print_error "Neither curl nor wget found. Install uv manually: https://docs.astral.sh/uv/getting-started/installation/"
         exit 1
     fi
 
-    # Reload PATH so uv is available in this session
+    # Make uv available in this session immediately
     export PATH="$HOME/.local/bin:$PATH"
 
     if ! command -v uv &> /dev/null; then
-        print_error "uv installation failed. Please install it manually: https://docs.astral.sh/uv/getting-started/installation/"
+        print_error "uv installation failed. Install it manually: https://docs.astral.sh/uv/getting-started/installation/"
         exit 1
     fi
 
     print_success "uv $(uv --version | awk '{print $2}') installed"
 }
+
+###############################################################################
+# Check CUDA
+###############################################################################
 
 check_cuda() {
     if [ "$INSTALL_TYPE" = "gpu" ]; then
@@ -147,35 +169,50 @@ check_cuda() {
 # Environment Setup
 ###############################################################################
 
-create_venv() {
-    print_header "Creating Virtual Environment"
+setup_environment() {
+    if [ "$ENV_MODE" = "venv" ]; then
+        print_header "Creating Virtual Environment"
 
-    if [ -d "$VENV_PATH" ]; then
-        print_warning "Virtual environment already exists at $VENV_PATH — removing and recreating..."
-        rm -rf "$VENV_PATH"
+        if [ -d "$VENV_PATH" ]; then
+            print_warning "Virtual environment already exists at $VENV_PATH — removing and recreating..."
+            rm -rf "$VENV_PATH"
+        fi
+
+        print_info "Creating virtual environment with Python $PYTHON_VERSION..."
+        uv venv "$VENV_PATH" --python "$PYTHON_VERSION"
+        print_success "Virtual environment created at $VENV_PATH"
+
+        print_info "Activating virtual environment..."
+        source "$VENV_PATH/bin/activate"
+        print_success "Virtual environment activated"
+
+    else
+        print_header "System Environment Mode"
+        print_info "Skipping venv creation — installing into the current environment."
+        print_warning "Packages will be installed system-wide (or into the active managed env)."
     fi
-
-    print_info "Creating virtual environment with Python $PYTHON_VERSION..."
-    uv venv "$VENV_PATH" --python "$PYTHON_VERSION"
-    print_success "Virtual environment created at $VENV_PATH"
-}
-
-activate_venv() {
-    print_info "Activating virtual environment..."
-    source "$VENV_PATH/bin/activate"
-    print_success "Virtual environment activated"
 }
 
 ###############################################################################
 # Dependency Installation
 ###############################################################################
 
+# Build the uv pip install base command.
+# In system mode: --system bypasses the "no active venv" safety check in uv,
+# which is exactly what Kaggle/Colab need.
+# In venv mode: the activated venv is already on PATH, so no extra flag needed.
+uv_pip() {
+    if [ "$ENV_MODE" = "system" ]; then
+        uv pip install --system "$@"
+    else
+        uv pip install "$@"
+    fi
+}
+
 install_dependencies() {
     if [ "$INSTALL_TYPE" = "gpu" ]; then
         print_header "Installing dependencies (GPU mode — CUDA 12.8)"
-
-        # Install PyTorch GPU from the PyTorch CUDA index
-        uv pip install \
+        uv_pip \
             torch==2.8.0 \
             torchvision==0.23.0 \
             torchaudio==2.8.0 \
@@ -183,9 +220,7 @@ install_dependencies() {
         print_success "PyTorch GPU (CUDA 12.8) installed"
     else
         print_header "Installing dependencies (CPU mode)"
-
-        # Install PyTorch CPU from the PyTorch CPU index
-        uv pip install \
+        uv_pip \
             torch==2.8.0 \
             torchvision==0.23.0 \
             torchaudio==2.8.0 \
@@ -193,8 +228,7 @@ install_dependencies() {
         print_success "PyTorch CPU installed"
     fi
 
-    # Install the project and all remaining dependencies (including [dev] extras)
-    uv pip install -e ".[dev]"
+    uv_pip -e ".[dev]"
     print_success "Project dependencies installed"
 }
 
@@ -262,21 +296,26 @@ print_final_instructions() {
     echo ""
     print_success "Environment setup completed successfully!"
     echo ""
-    echo -e "${BLUE}Next Steps:${NC}"
-    echo "1. Activate the environment:"
-    echo -e "   ${YELLOW}source $VENV_PATH/bin/activate${NC}"
+
+    if [ "$ENV_MODE" = "venv" ]; then
+        echo -e "${BLUE}Next Steps:${NC}"
+        echo "1. Activate the environment (future sessions):"
+        echo -e "   ${YELLOW}source $VENV_PATH/bin/activate${NC}"
+        echo ""
+        echo "   Or run without activating:"
+        echo -e "   ${YELLOW}uv run python inferance.py --input_dir ./data/test/ --output_dir ./results/${NC}"
+    else
+        echo -e "${BLUE}Next Steps:${NC}"
+        echo "   Packages are installed into the current environment — no activation needed."
+        echo -e "   ${YELLOW}python inferance.py --input_dir ./data/test/ --output_dir ./results/${NC}"
+    fi
+
     echo ""
-    echo "2. Verify the setup:"
-    echo -e "   ${YELLOW}python -c 'import torch; print(f\"PyTorch version: {torch.__version__}\")'${NC}"
+    echo "2. Verify PyTorch:"
+    echo -e "   ${YELLOW}python -c 'import torch; print(f\"PyTorch: {torch.__version__}\")'${NC}"
     echo ""
-    echo "3. Run inference:"
-    echo -e "   ${YELLOW}python inferance.py --input_dir ./data/test/ --output_dir ./results/${NC}"
-    echo ""
-    echo "4. For GPU acceleration:"
+    echo "3. Check GPU:"
     echo -e "   ${YELLOW}python -c 'import torch; print(f\"GPU available: {torch.cuda.is_available()}\")'${NC}"
-    echo ""
-    echo -e "${BLUE}Run commands with uv (no manual activation needed):${NC}"
-    echo -e "   ${YELLOW}uv run python inferance.py --input_dir ./data/test/ --output_dir ./results/${NC}"
     echo ""
     echo -e "${BLUE}Documentation:${NC}"
     echo "  - README.md        - Project overview and usage"
@@ -306,10 +345,7 @@ main() {
     check_cuda
     echo ""
 
-    create_venv
-    echo ""
-
-    activate_venv
+    setup_environment
     echo ""
 
     install_dependencies
