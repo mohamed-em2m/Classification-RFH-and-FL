@@ -14,6 +14,7 @@ set VENV_NAME=rfh-fl-env
 set VENV_PATH=.venv
 set INSTALL_TYPE=
 set COMMAND_ARG=%1
+set NEEDS_PIP_INSTALL=0
 
 REM Color codes (using limited colors for Windows compatibility)
 set "SUCCESS=[SUCCESS]"
@@ -137,13 +138,22 @@ REM Step 5: Create virtual environment
 echo ========================================
 echo Creating Virtual Environment
 echo ========================================
-python -m venv "%VENV_PATH%"
+echo %INFO% Creating virtual environment...
+python -m venv "%VENV_PATH%" >nul 2>&1
 if %errorlevel% equ 0 (
     echo %SUCCESS% Virtual environment created at %VENV_PATH%
+    set NEEDS_PIP_INSTALL=0
 ) else (
-    echo %ERROR% Failed to create virtual environment
-    pause
-    exit /b 1
+    echo %WARNING% Standard venv creation failed, trying without pip bootstrap...
+    python -m venv --without-pip "%VENV_PATH%" >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo %INFO% Virtual environment created (without pip). Will install pip manually...
+        set NEEDS_PIP_INSTALL=1
+    ) else (
+        echo %ERROR% Failed to create virtual environment
+        pause
+        exit /b 1
+    )
 )
 echo.
 
@@ -158,6 +168,16 @@ REM Step 7: Upgrade pip
 echo ========================================
 echo Upgrading pip and build tools
 echo ========================================
+
+if %NEEDS_PIP_INSTALL% equ 1 (
+    echo %INFO% Installing pip manually...
+    powershell -Command "try { (New-Object System.Net.WebClient).DownloadString('https://bootstrap.pypa.io/get-pip.py') | python } catch { Write-Host 'Manual pip install failed, trying ensurepip...' }" >nul 2>&1
+    if !errorlevel! neq 0 (
+        echo %WARNING% Could not download get-pip.py. Trying ensurepip as fallback...
+        python -m ensurepip --upgrade --default-pip >nul 2>&1
+    )
+)
+
 python -m pip install --upgrade pip setuptools wheel >nul 2>&1
 if %errorlevel% equ 0 (
     echo %SUCCESS% pip, setuptools, and wheel upgraded

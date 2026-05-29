@@ -22,6 +22,7 @@ VENV_NAME="rfh-fl-env"
 VENV_PATH=".venv"
 INSTALL_TYPE=""
 COMMAND_ARG="${1:-}"
+NEEDS_PIP_INSTALL=false
 
 ###############################################################################
 # Helper Functions
@@ -122,8 +123,20 @@ create_venv() {
         fi
     fi
     
-    python3 -m venv "$VENV_PATH"
-    print_success "Virtual environment created at $VENV_PATH"
+    # Try to create venv with pip
+    print_info "Creating virtual environment..."
+    if ! python3 -m venv "$VENV_PATH" 2>&1; then
+        print_warning "Standard venv creation failed, trying without pip bootstrap..."
+        python3 -m venv --without-pip "$VENV_PATH" || {
+            print_error "Failed to create virtual environment"
+            exit 1
+        }
+        print_info "Virtual environment created (without pip). Will install pip manually..."
+        NEEDS_PIP_INSTALL=true
+    else
+        print_success "Virtual environment created at $VENV_PATH"
+        NEEDS_PIP_INSTALL=false
+    fi
 }
 
 activate_venv() {
@@ -134,8 +147,25 @@ activate_venv() {
 
 upgrade_pip() {
     print_header "Upgrading pip and build tools"
-    python3 -m pip install --upgrade pip setuptools wheel
-    print_success "pip, setuptools, and wheel upgraded"
+    
+    # If pip needs to be installed manually
+    if [ "$NEEDS_PIP_INSTALL" = true ]; then
+        print_info "Installing pip manually..."
+        if command -v curl &> /dev/null; then
+            curl https://bootstrap.pypa.io/get-pip.py | python3
+        elif command -v wget &> /dev/null; then
+            wget -O - https://bootstrap.pypa.io/get-pip.py | python3
+        else
+            print_warning "Could not download get-pip.py. Trying ensurepip as fallback..."
+            python3 -m ensurepip --upgrade --default-pip || print_warning "ensurepip also failed"
+        fi
+    fi
+    
+    # Upgrade pip and related tools
+    python3 -m pip install --upgrade pip setuptools wheel 2>/dev/null || {
+        print_warning "Could not upgrade pip/setuptools/wheel. Continuing with existing versions..."
+    }
+    print_success "pip and build tools ready"
 }
 
 ###############################################################################

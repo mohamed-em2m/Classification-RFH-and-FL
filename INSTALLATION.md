@@ -213,6 +213,38 @@ Includes: sphinx, sphinx-rtd-theme
 
 ## Troubleshooting
 
+### Virtual Environment Creation Error: ensurepip Failed
+
+**Error:** `Command '[.../.venv/bin/python3', '-m', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1.`
+
+**Solution:** This commonly occurs in restricted environments like Kaggle. Our updated setup scripts now handle this automatically:
+
+1. **Automatic fallback:** The setup scripts will try creating a venv without pip first, then install pip manually
+2. **Manual fix:** If the automated script still fails, try:
+
+**Linux/macOS:**
+```bash
+python3 -m venv --without-pip .venv
+source .venv/bin/activate
+curl https://bootstrap.pypa.io/get-pip.py | python
+pip install -e .
+```
+
+**Windows:**
+```powershell
+python -m venv --without-pip .venv
+.venv\Scripts\activate.bat
+powershell -Command "(New-Object System.Net.WebClient).DownloadString('https://bootstrap.pypa.io/get-pip.py') | python"
+pip install -e .
+```
+
+3. **For Kaggle specifically:** Use `--cpu` argument for non-interactive setup:
+```bash
+./setup.sh --cpu
+```
+
+---
+
 ### Python Version Issues
 ```bash
 # Check your Python version
