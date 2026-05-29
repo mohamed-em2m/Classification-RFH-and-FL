@@ -26,28 +26,28 @@ classifiers = [
 requires-python = ">=3.12,<3.13"
 
 dependencies = [
-    "numpy==1.26.4",
-    "pandas==2.2.3",
-    "scikit-learn==1.5.2",
-    "matplotlib==3.9.2",
+    "numpy==2.2.6",
+    "pandas==3.0.3",
+    "scikit-learn==1.8.0",
+    "matplotlib==3.10.9",
     "seaborn==0.13.2",
-    "pillow==10.4.0",
-    "tqdm==4.66.5",
+    "pillow==12.2.0",
+    "tqdm==4.67.3",
     "openpyxl==3.1.5",
-    "xgboost>=2.0.0",
+    "xgboost>=3.0.0",
     "shap>=0.45.0",
 ]
 
 [project.optional-dependencies]
 torch-cpu = [
-    "torch>=2.0.0",
-    "torchvision>=0.15.0",
-    "torchaudio>=2.0.0",
+    "torch==2.8.0",
+    "torchvision==0.23.0",
+    "torchaudio==2.8.0",
 ]
 torch-cuda = [
-    "torch>=2.0.0",
-    "torchvision>=0.15.0",
-    "torchaudio>=2.0.0",
+    "torch==2.8.0",
+    "torchvision==0.23.0",
+    "torchaudio==2.8.0",
 ]
 dev = [
     "pytest>=7.0",

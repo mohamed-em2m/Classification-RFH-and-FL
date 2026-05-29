@@ -191,15 +191,13 @@ upgrade_pip() {
 install_dependencies() {
     if [ "$INSTALL_TYPE" = "gpu" ]; then
         print_header "Installing dependencies (GPU mode — CUDA 12.8)"
-        print_info "Installing compatible PyTorch GPU components..."
-        pip install torch torchvision torchaudio \
-            --index-url https://download.pytorch.org/whl/cu128 --no-cache-dir 2>&1 | grep -E "(Successfully|ERROR|WARNING)" || true
-        print_success "PyTorch GPU installed"
+        pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 \
+            --index-url https://download.pytorch.org/whl/cu128
+        print_success "PyTorch GPU (CUDA 12.8) installed"
     else
         print_header "Installing dependencies (CPU mode)"
-        print_info "Installing compatible PyTorch CPU components..."
-        pip install torch torchvision torchaudio \
-            --index-url https://download.pytorch.org/whl/cpu --no-cache-dir 2>&1 | grep -E "(Successfully|ERROR|WARNING)" || true
+        pip install torch==2.8.0 torchvision==0.23.0 torchaudio==2.8.0 \
+            --index-url https://download.pytorch.org/whl/cpu
         print_success "PyTorch CPU installed"
     fi
 
