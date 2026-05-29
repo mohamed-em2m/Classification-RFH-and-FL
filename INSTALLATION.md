@@ -5,19 +5,50 @@ This document provides step-by-step instructions for setting up the RFH-FL Class
 ## Quick Start (Automated)
 
 ### Windows Users
+
+**Interactive mode (prompts for choice):**
 ```bash
 setup.bat
 ```
 
+**GPU (CUDA 12.8) mode:**
+```bash
+setup.bat --cuda
+```
+
+**CPU-only mode:**
+```bash
+setup.bat --cpu
+```
+
 ### Linux/macOS Users
+
+**Interactive mode (prompts for choice):**
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
+**GPU (CUDA 12.8) mode:**
+```bash
+chmod +x setup.sh
+./setup.sh --cuda
+```
+
+**CPU-only mode:**
+```bash
+chmod +x setup.sh
+./setup.sh --cpu
+```
+
+**Help:**
+```bash
+./setup.sh --help
+```
+
 The automated setup will:
 - ✓ Check system requirements (Python 3.12)
-- ✓ Detect CUDA/GPU availability
+- ✓ Detect CUDA/GPU availability (in interactive mode)
 - ✓ Create a virtual environment
 - ✓ Install all dependencies (PyTorch, scientific libraries, etc.)
 - ✓ Verify the installation
@@ -25,7 +56,49 @@ The automated setup will:
 
 ---
 
-## Manual Installation (Step-by-Step)
+## Command-Line Arguments
+
+Both `setup.sh` and `setup.bat` support command-line arguments to automate the installation without prompts:
+
+### Available Arguments
+
+| Argument | Description | Example |
+|----------|-------------|---------|
+| `--cuda` | Install with CUDA 12.8 GPU support | `setup.bat --cuda` |
+| `--cpu` | Install CPU-only version | `./setup.sh --cpu` |
+| `--help` | Show help message (Linux/macOS only) | `./setup.sh --help` |
+| *(no argument)* | Interactive mode - prompts for choice | `setup.bat` |
+
+### Usage Examples
+
+**Automated GPU setup (no prompts):**
+```bash
+# Linux/macOS
+./setup.sh --cuda
+
+# Windows
+setup.bat --cuda
+```
+
+**Automated CPU setup (no prompts):**
+```bash
+# Linux/macOS
+./setup.sh --cpu
+
+# Windows
+setup.bat --cpu
+```
+
+**Interactive mode (recommended for first-time users):**
+```bash
+# Linux/macOS
+./setup.sh
+
+# Windows
+setup.bat
+```
+
+---
 
 If you prefer manual installation or the automated scripts don't work for you, follow these steps:
 

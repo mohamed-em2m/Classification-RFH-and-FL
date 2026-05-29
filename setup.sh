@@ -20,6 +20,8 @@ PROJECT_NAME="rfh-fl-classification"
 PYTHON_VERSION="3.12"
 VENV_NAME="rfh-fl-env"
 VENV_PATH=".venv"
+INSTALL_TYPE=""
+COMMAND_ARG="${1:-}"
 
 ###############################################################################
 # Helper Functions
@@ -45,6 +47,20 @@ print_warning() {
 
 print_info() {
     echo -e "${BLUE}ℹ $1${NC}"
+}
+
+print_usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --cuda    Install with CUDA 12.8 support (GPU)"
+    echo "  --cpu     Install CPU-only version"
+    echo "  --help    Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0 --cuda    # Setup with GPU support"
+    echo "  $0 --cpu     # Setup CPU-only version"
+    echo "  $0           # Interactive mode (prompts for choice)"
 }
 
 ###############################################################################
@@ -248,41 +264,64 @@ main() {
     check_python
     echo ""
     
-    # Step 2: Check CUDA
-    HAS_CUDA=false
-    if check_cuda; then
-        HAS_CUDA=true
-    fi
-    echo ""
-    
-    # Step 3: Ask user for installation type
-    print_header "Installation Type Selection"
-    if [ "$HAS_CUDA" = true ]; then
-        echo "GPU (CUDA 12.8) support is available on this system."
-        echo ""
-        echo "1) GPU (CUDA 12.8) - Recommended if NVIDIA GPU available"
-        echo "2) CPU only"
-        read -p "Select installation type (1 or 2): " -n 1 INSTALL_TYPE
-        echo ""
+    # Step 2: Check command-line arguments
+    if [ -n "$COMMAND_ARG" ]; then
+        case "$COMMAND_ARG" in
+            --cuda)
+                INSTALL_TYPE="1"
+                print_info "GPU (CUDA 12.8) mode selected via argument"
+                ;;
+            --cpu)
+                INSTALL_TYPE="2"
+                print_info "CPU-only mode selected via argument"
+                ;;
+            --help)
+                print_usage
+                exit 0
+                ;;
+            *)
+                print_error "Unknown argument: $COMMAND_ARG"
+                print_usage
+                exit 1
+                ;;
+        esac
     else
-        print_warning "GPU support not available. Installing CPU version."
-        INSTALL_TYPE="2"
+        # Interactive mode: Check CUDA and prompt user
+        HAS_CUDA=false
+        if check_cuda; then
+            HAS_CUDA=true
+        fi
+        echo ""
+        
+        # Ask user for installation type
+        print_header "Installation Type Selection"
+        if [ "$HAS_CUDA" = true ]; then
+            echo "GPU (CUDA 12.8) support is available on this system."
+            echo ""
+            echo "1) GPU (CUDA 12.8) - Recommended if NVIDIA GPU available"
+            echo "2) CPU only"
+            read -p "Select installation type (1 or 2): " -n 1 INSTALL_TYPE
+            echo ""
+        else
+            print_warning "GPU support not available. Installing CPU version."
+            INSTALL_TYPE="2"
+        fi
     fi
     echo ""
     
-    # Step 4: Create virtual environment
+    # Create virtual environment
     create_venv
     echo ""
     
-    # Step 5: Activate virtual environment
+    # Activate virtual environment
     activate_venv
     echo ""
     
-    # Step 6: Upgrade pip
+    # Upgrade pip
     upgrade_pip
     echo ""
     
-    # Step 7: Install dependencies
+    # Install dependencies
     if [ "$INSTALL_TYPE" = "1" ]; then
         install_dependencies_gpu
     else
@@ -290,11 +329,11 @@ main() {
     fi
     echo ""
     
-    # Step 8: Verify installation
+    # Verify installation
     verify_installation
     echo ""
     
-    # Step 9: Print final instructions
+    # Print final instructions
     print_final_instructions
 }
 

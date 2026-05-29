@@ -12,12 +12,50 @@ set PROJECT_NAME=rfh-fl-classification
 set PYTHON_VERSION=3.12
 set VENV_NAME=rfh-fl-env
 set VENV_PATH=.venv
+set INSTALL_TYPE=
+set COMMAND_ARG=%1
 
 REM Color codes (using limited colors for Windows compatibility)
 set "SUCCESS=[SUCCESS]"
 set "ERROR=[ERROR]"
 set "WARNING=[WARNING]"
 set "INFO=[INFO]"
+
+REM Parse command-line arguments
+if /i "!COMMAND_ARG!"=="--cuda" (
+    set INSTALL_TYPE=1
+    echo.
+    echo %INFO% GPU (CUDA 12.8) mode selected via argument
+    echo.
+) else if /i "!COMMAND_ARG!"=="--cpu" (
+    set INSTALL_TYPE=2
+    echo.
+    echo %INFO% CPU-only mode selected via argument
+    echo.
+) else if /i "!COMMAND_ARG!"=="--help" (
+    echo Usage: setup.bat [OPTIONS]
+    echo.
+    echo Options:
+    echo   --cuda    Install with CUDA 12.8 support (GPU)
+    echo   --cpu     Install CPU-only version
+    echo   --help    Show this help message
+    echo.
+    echo Examples:
+    echo   setup.bat --cuda    # Setup with GPU support
+    echo   setup.bat --cpu     # Setup CPU-only version
+    echo   setup.bat           # Interactive mode (prompts for choice)
+    echo.
+    pause
+    exit /b 0
+) else if not "!COMMAND_ARG!"=="" (
+    echo %ERROR% Unknown argument: !COMMAND_ARG!
+    echo.
+    echo Usage: setup.bat [OPTIONS]
+    echo Options: --cuda, --cpu, --help
+    echo.
+    pause
+    exit /b 1
+)
 
 cls
 echo.
@@ -48,28 +86,34 @@ echo %INFO% Checking NVIDIA CUDA availability...
 where nvidia-smi >nul 2>&1
 if %errorlevel% equ 0 (
     for /f "tokens=*" %%i in ('nvidia-smi --query-gpu=driver_version --format^=csv,noheader 2^>nul') do set DRIVER_VERSION=%%i
-    echo %SUCCESS% NVIDIA GPU detected (Driver: %DRIVER_VERSION%)
+    echo %SUCCESS% NVIDIA GPU detected (Driver: !DRIVER_VERSION!)
     set HAS_CUDA=1
 ) else (
-    echo %WARNING% NVIDIA GPU not detected. CPU-only installation will be used.
+    echo %WARNING% NVIDIA GPU not detected.
     set HAS_CUDA=0
 )
 echo.
 
-REM Step 3: Ask user for installation type
-echo ========================================
-echo Installation Type Selection
-echo ========================================
-if %HAS_CUDA% equ 1 (
-    echo GPU (CUDA 12.8) support is available on this system.
+REM Step 3: Determine installation type
+if not "!INSTALL_TYPE!"=="" (
+    REM Argument was provided, INSTALL_TYPE already set
     echo.
-    echo 1 = GPU (CUDA 12.8) - Recommended if NVIDIA GPU available
-    echo 2 = CPU only
-    echo.
-    set /p INSTALL_TYPE="Select installation type (1 or 2): "
 ) else (
-    echo %WARNING% GPU support not available. Installing CPU version.
-    set INSTALL_TYPE=2
+    REM Interactive mode - ask user
+    echo ========================================
+    echo Installation Type Selection
+    echo ========================================
+    if !HAS_CUDA! equ 1 (
+        echo GPU (CUDA 12.8) support is available on this system.
+        echo.
+        echo 1 = GPU (CUDA 12.8) - Recommended if NVIDIA GPU available
+        echo 2 = CPU only
+        echo.
+        set /p INSTALL_TYPE="Select installation type (1 or 2): "
+    ) else (
+        echo %WARNING% GPU support not available. Installing CPU version.
+        set INSTALL_TYPE=2
+    )
 )
 echo.
 
